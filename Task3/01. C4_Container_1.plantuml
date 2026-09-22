@@ -1,0 +1,44 @@
+@startuml RetailBank_AI_Container
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title C4 Container — Приоритизация подозрительных операций
+
+Person(expert, "Сотрудник финмониторинга", "Проверяет операции и принимает решение")
+
+System_Ext(core, "Банковские системы", "Источник операций и истории")
+System_Ext(extSignals, "Внешние сигналы", "Дополнительные сигналы риска")
+
+System_Boundary(aiService, "AI-сервис приоритизации") {
+
+    Container(intake, "Приём операций", "Application Service", "Получает операции для оценки")
+    Container(featureService, "Feature Service", "Application Service", "Формирует и проверяет признаки операции и клиента")
+    Container(model, "Ranking Model", "ML Model", "Рассчитывает оценку приоритета операции")
+    Container(calibration, "Calibration & Threshold", "Application Service", "Калибрует score и применяет рабочий порог")
+    Container(ruleEngine, "Business Rules", "Application Service", "Применяет детерминированные правила и внешние сигналы")
+    Container(validator, "Result Validator", "Application Service", "Проверяет выходной контракт и условия fallback")
+    Container(queue, "Очередь проверки", "Task Queue", "Хранит операции в порядке приоритета")
+    Container(expertUI, "Интерфейс финмониторинга", "Web Application", "Показывает операции и сигналы для ручной проверки")
+    ContainerDb(audit, "Журнал вызовов и решений", "Audit Storage", "Хранит вход, результат, версию модели и решение сотрудника")
+
+}
+
+Rel(core, intake, "Передаёт операции")
+Rel(intake, featureService, "Передаёт операцию")
+Rel(core, featureService, "История клиента и операций")
+Rel(extSignals, featureService, "Внешние сигналы")
+
+Rel(featureService, model, "Признаки")
+Rel(model, calibration, "Raw score")
+Rel(calibration, ruleEngine, "Score")
+Rel(featureService, ruleEngine, "Признаки")
+Rel(ruleEngine, validator, "Score + сигналы правил")
+
+Rel(validator, queue, "Приоритет / fallback")
+Rel(queue, expertUI, "Операции на проверку")
+Rel(expert, expertUI, "Проверяет и фиксирует решение")
+
+Rel(validator, audit, "Результат оценки")
+Rel(expertUI, audit, "Решение сотрудника")
+
+@enduml
