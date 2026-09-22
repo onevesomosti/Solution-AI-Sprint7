@@ -1,0 +1,36 @@
+@startuml RetailBank_Fake_Documents
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title C4 Container — Выявление поддельных документов
+
+Person(expert, "Сотрудник банка", "Проверяет подозрительные документы")
+
+System_Ext(loanSystem, "Система кредитных заявок", "Источник документов кредитной заявки")
+
+System_Boundary(aiService, "Сервис проверки документов") {
+
+Container(intake, "Document Intake", "Application Service", "Получает документ на проверку")
+
+Container(preprocess, "Document Preprocessor", "Application Service", "Проверяет формат и подготавливает документ")
+
+Container(model, "Document Detection Model", "ML / CV", "Рассчитывает оценку подозрительности документа")
+
+Container(validator, "Result Validator", "Application Service", "Проверяет выходной контракт и условия fallback")
+
+Container(queue, "Очередь проверки", "Task Queue", "Передаёт подозрительные случаи сотруднику")
+
+ContainerDb(audit, "Журнал вызовов и решений", "Audit Storage", "Хранит результат и версию модели")
+
+}
+
+Rel(loanSystem, intake, "PDF / изображение")
+Rel(intake, preprocess, "Документ")
+Rel(preprocess, model, "Подготовленный документ")
+Rel(model, validator, "Оценка подозрительности")
+Rel(validator, queue, "Подозрительный / fallback")
+Rel(queue, expert, "Документ на проверку")
+
+Rel(validator, audit, "Результат оценки")
+
+@enduml
