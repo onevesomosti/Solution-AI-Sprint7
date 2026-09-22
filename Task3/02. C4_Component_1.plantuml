@@ -1,0 +1,47 @@
+@startuml RetailBank_AI_Component
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_TOP_DOWN()
+
+title C4 Component — Приоритизация подозрительных операций
+
+Person(expert, "Сотрудник финмониторинга", "Проверяет операции и принимает решение")
+
+System_Ext(core, "Банковские системы", "Источник операций и истории")
+System_Ext(extSignals, "Внешние сигналы", "Дополнительные сигналы риска")
+
+Container_Boundary(aiService, "AI-сервис приоритизации") {
+
+    Component(intake, "Operation Intake", "Application Component", "Принимает операции и запускает обработку")
+    Component(features, "Feature Builder", "Application Component", "Формирует и проверяет признаки")
+    Component(model, "Ranking Model", "ML Model", "Рассчитывает score приоритета")
+    Component(calibration, "Calibration & Threshold", "Application Component", "Калибрует score и применяет рабочий порог")
+    Component(rules, "Business Rules", "Application Component", "Применяет детерминированные правила")
+    Component(validator, "Contract & Fallback Validator", "Application Component", "Проверяет контракт и условия fallback")
+    Component(queue, "Expert Queue", "Queue", "Формирует очередь ручной проверки")
+    Component(ui, "Expert UI", "Web Component", "Показывает операцию и сигналы сотруднику")
+    Component(audit, "Audit Log", "Storage", "Хранит вход, версию модели, результат и решение")
+
+}
+
+core ..> intake : "TB-1: Передаёт операции"
+Rel(intake, features, "Данные операции")
+core ..> features: "TB-1: История клиента и операций"
+extSignals ..> features: "TB-1: Внешние сигналы"
+
+Rel(features, model, "Признаки")
+model ..> calibration: "TB-2: Raw score"
+
+Rel(calibration, rules, "Score")
+Rel(features, rules, "Признаки")
+Rel(rules, validator, "Score + сигналы правил")
+
+Rel(validator, queue, "Приоритет / fallback")
+Rel(queue, ui, "Операции на проверку")
+Rel(expert, ui, "Проверяет и фиксирует решение")
+
+Rel(validator, audit, "Результат оценки")
+Rel(ui, audit, "Решение сотрудника")
+
+@enduml
