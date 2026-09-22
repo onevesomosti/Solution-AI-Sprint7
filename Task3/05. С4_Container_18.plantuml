@@ -1,0 +1,40 @@
+@startuml RetailBank_Financial_Extraction
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title C4 Container — Извлечение финансовых показателей
+
+Person(underwriter, "Андеррайтер", "Проверяет извлечённые показатели")
+
+System_Ext(loanSystem, "Система кредитных заявок", "Источник документов кредитной заявки")
+
+System_Boundary(aiService, "Сервис извлечения финансовых показателей") {
+
+Container(intake, "Document Intake", "Application Service", "Принимает документы")
+
+Container(router, "Format Router", "Application Service", "Определяет формат и способ обработки")
+
+Container(parser, "Parser / OCR", "Parser / OCR", "Извлекает текст и структуру документа")
+
+Container(extractor, "Extraction Model", "ML Model", "Извлекает финансовые показатели")
+
+Container(validator, "Contract Validator", "Application Service", "Проверяет схему, типы и арифметические инварианты")
+
+Container(queue, "Review Queue", "Task Queue", "Передаёт спорные результаты на ручную проверку")
+
+ContainerDb(audit, "Журнал вызовов и решений", "Audit Storage", "Хранит вход, результат, версию модели и решение")
+
+}
+
+Rel(loanSystem, intake, "Excel / PDF / фото")
+Rel(intake, router, "Документ")
+Rel(router, parser, "Файл")
+Rel(parser, extractor, "Текст / структура")
+Rel(extractor, validator, "Извлечённые поля")
+
+Rel(validator, queue, "Ошибка / fallback")
+Rel(queue, underwriter, "На ручную проверку")
+
+Rel(validator, audit, "Результат")
+
+@enduml
